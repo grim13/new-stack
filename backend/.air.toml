@@ -1,0 +1,29 @@
+# Direktori root proyek Anda.
+root = "."
+# Direktori untuk menyimpan file binary sementara.
+tmp_dir = "tmp"
+
+[build]
+# Perintah untuk mengompilasi aplikasi Anda.
+# Sesuaikan dengan path entry point (main.go) Anda.
+cmd = "go build -o ./tmp/main ./cmd/main/main.go"
+# Path ke file binary yang telah dikompilasi.
+# Air akan menjalankan file ini.
+bin = "./tmp/main"
+# Ekstensi file yang akan memicu build ulang.
+include_ext = ["go", "tpl", "tmpl", "html", "env"]
+# Direktori yang ingin diabaikan saat memantau perubahan.
+exclude_dir = ["tmp", "vendor", "database"]
+# Tunda proses build ulang selama 1 detik setelah perubahan terdeteksi.
+delay = 1000 # ms
+
+[log]
+# Tampilkan log waktu.
+time = true
+
+[color]
+# Aktifkan warna pada output log untuk keterbacaan.
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"

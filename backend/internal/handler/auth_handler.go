@@ -1,0 +1,144 @@
+package handler
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/grim13/go-api/internal/auth"
+	"github.com/grim13/go-api/internal/model"
+	"github.com/grim13/go-api/internal/repository" // Impor repository
+	"github.com/grim13/go-api/internal/util"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+// AuthHandler menampung dependensi untuk auth handler, yaitu user repository
+type AuthHandler struct {
+	userRepo repository.UserRepository
+}
+
+// NewAuthHandler membuat instance baru dari AuthHandler
+func NewAuthHandler(userRepo repository.UserRepository) *AuthHandler {
+	return &AuthHandler{userRepo: userRepo}
+}
+
+// --- Ubah semua method menjadi milik struct AuthHandler ---
+
+func (h *AuthHandler) Register(c *gin.Context) {
+	var input model.RegisterInput
+
+	// Tangkap error dari ShouldBindJSON
+	if err := c.ShouldBindJSON(&input); err != nil {
+		// Panggil fungsi helper kita untuk memformat error
+		errors := util.FormatValidationErrors(err)
+
+		// Kembalikan objek JSON dengan key "errors"
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+		return
+	}
+
+	defaultRole, err := h.userRepo.FindRoleByName("user") // Gunakan repo
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Default role not found"})
+		return
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	user := model.User{
+		Name:     input.Name,
+		Username: input.Username,
+		Email:    input.Email,
+		Password: string(hashedPassword),
+		RoleID:   defaultRole.ID,
+		Roles:    []model.Role{*defaultRole},
+	}
+
+	if err := h.userRepo.Save(&user); err != nil { // Gunakan repo
+		if strings.Contains(err.Error(), "duplicate key") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Username or Email already exists"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"message": "Registration successful"})
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var input model.LoginInput
+	// Tangkap error dari ShouldBindJSON
+	if err := c.ShouldBindJSON(&input); err != nil {
+		// Panggil fungsi helper kita untuk memformat error
+		errors := util.FormatValidationErrors(err)
+
+		// Kembalikan objek JSON dengan key "errors"
+		println("Login input error:", errors)
+		// c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+		return
+	}
+
+	// debug input
+	// println("Login input:", input.Identifier, input.Password)
+
+	user, err := h.userRepo.FindByEmailOrUsername(input.Identifier) // Gunakan repo
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid identifier or password"})
+		return
+	}
+
+	println("User found:", user.Roles[0].ID)
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid identifier or password"})
+		return
+	}
+
+	// ... (logika bcrypt dan generate token sama)
+	// ...
+	token, _ := auth.GenerateToken(user.ID, user.Username, user.Name, user.Email, user.RoleID, user.Role.Name)
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func (h *AuthHandler) Profile(c *gin.Context) {
+	// 1. Ambil userID dari konteks yang di-set oleh middleware
+	userIDContext, exists := c.Get("userID")
+	if !exists {
+		// Ini seharusnya tidak terjadi jika middleware berjalan dengan benar
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID not found in token"})
+		return
+	}
+
+	// 2. Lakukan type assertion dengan aman
+	//    Nilai 'sub' dari token JWT biasanya dibaca sebagai float64 oleh Go
+	userIDFloat, ok := userIDContext.(float64)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type in token"})
+		return
+	}
+
+	// 3. Konversi float64 ke uint untuk digunakan di repository
+	userID := uint(userIDFloat)
+
+	// 4. Gunakan ID untuk mengambil data user dari repository
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch user profile"})
+		return
+	}
+
+	// Buat respons yang aman (tanpa password)
+	userProfile := gin.H{
+		"id":       user.ID,
+		"name":     user.Name,
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.Role.Name,
+	}
+
+	c.JSON(http.StatusOK, userProfile)
+}
