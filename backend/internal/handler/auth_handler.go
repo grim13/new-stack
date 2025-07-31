@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/grim13/go-api/internal/auth"
 	"github.com/grim13/go-api/internal/model"
 	"github.com/grim13/go-api/internal/repository" // Impor repository
@@ -101,27 +102,22 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Profile(c *gin.Context) {
-	// 1. Ambil userID dari konteks yang di-set oleh middleware
 	userIDContext, exists := c.Get("userID")
 	if !exists {
-		// Ini seharusnya tidak terjadi jika middleware berjalan dengan benar
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID not found in token"})
 		return
 	}
-
-	// 2. Lakukan type assertion dengan aman
-	//    Nilai 'sub' dari token JWT biasanya dibaca sebagai float64 oleh Go
-	userIDFloat, ok := userIDContext.(float64)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type in token"})
+	//konversi userIDContext ke uuid.UUID
+	if userIDContext == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID is nil"})
 		return
 	}
-
-	// 3. Konversi float64 ke uint untuk digunakan di repository
-	userID := uint(userIDFloat)
-
-	// 4. Gunakan ID untuk mengambil data user dari repository
-	user, err := h.userRepo.FindByID(userID)
+	userIDUUID, err := uuid.Parse(userIDContext.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID is not a valid UUID", "userID": userIDContext})
+		return
+	}
+	user, err := h.userRepo.FindByID(userIDUUID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})

@@ -7,8 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grim13/go-api/database"
 	"github.com/grim13/go-api/internal/auth"
-	"github.com/grim13/go-api/internal/config"
-	"github.com/grim13/go-api/internal/repository" // Impor repository
+	"github.com/grim13/go-api/internal/config" // Impor repository
 	"github.com/grim13/go-api/routes"
 )
 
@@ -24,11 +23,10 @@ func main() {
 
 	// === Dependency Injection ===
 	// 1. Buat instance dari repository
-	userRepo := repository.NewUserRepositoryGORM(config.DB)
 
 	// 2. Setup router dan suntikkan repository ke dalamnya
 	r := gin.Default()
-	routes.SetupRouter(r, userRepo) // Berikan repo ke router
+	routes.SetupRouter(r, config.DB) // Berikan repo ke router
 
 	// ... (jalankan server)
 	port := os.Getenv("SERVER_PORT")
