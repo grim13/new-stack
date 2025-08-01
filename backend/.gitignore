@@ -51,3 +51,7 @@ Thumbs.db
 # Optional files
 .npm
 .pnp.*
+
+# tmp air
+/tmp
+/tmp.*

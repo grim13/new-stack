@@ -39,6 +39,7 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	sortBy := c.DefaultQuery("sortBy", "created_at")
 	sortOrder := c.DefaultQuery("sortOrder", "desc")
+	searchQuery := c.DefaultQuery("search", "")
 
 	// Pastikan limit dan page valid
 	if page <= 0 {
@@ -49,7 +50,7 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	}
 
 	// 2. Panggil repository untuk mendapatkan data
-	users, totalRecords, err := h.userRepo.FindAll(page, limit, sortBy, sortOrder)
+	users, totalRecords, err := h.userRepo.FindAll(page, limit, sortBy, sortOrder, searchQuery)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return

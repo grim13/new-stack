@@ -16,7 +16,7 @@ type UserRepository interface {
 	FindByEmailOrUsername(identifier string) (*model.User, error)
 	FindByID(id uuid.UUID) (*model.User, error)
 	FindRoleByName(name string) (*model.Role, error)
-	FindAll(page, limit int, sortBy, sortOrder string) ([]model.User, int64, error)
+	FindAll(page, limit int, sortBy, sortOrder string, searchQuery string) ([]model.User, int64, error)
 }
 
 // userRepositoryGORM adalah implementasi konkret dari UserRepository menggunakan GORM
@@ -56,7 +56,7 @@ func (r *userRepositoryGORM) FindByID(id uuid.UUID) (*model.User, error) {
 	return &user, err
 }
 
-func (r *userRepositoryGORM) FindAll(page, limit int, sortBy, sortOrder string) ([]model.User, int64, error) {
+func (r *userRepositoryGORM) FindAll(page, limit int, sortBy, sortOrder string, searchQuery string) ([]model.User, int64, error) {
 	var users []model.User
 	var totalRecords int64
 
@@ -69,7 +69,7 @@ func (r *userRepositoryGORM) FindAll(page, limit int, sortBy, sortOrder string) 
 	offset := (page - 1) * limit
 	orderClause := fmt.Sprintf("%s %s", sortBy, sortOrder)
 
-	err := r.db.Preload("Role").Order(orderClause).Limit(limit).Offset(offset).Find(&users).Error
+	err := r.db.Preload("Role").Preload("Roles").Order(orderClause).Limit(limit).Offset(offset).Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}
