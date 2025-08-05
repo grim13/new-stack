@@ -1,27 +1,29 @@
-# Dependencies
-/node_modules
-/bower_components
+# Go specific
+# Build binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+/bin/
+/build/
 
-# Build output
-/dist
-/build
-/.out
-/.vercel
+# Test binary, built with `go test -c`
+*.test
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lcov.info
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Go workspace file
+go.work
+go.work.sum
+
+# Air tmp folder for hot reload
+/tmp/
+/tmp.*
 
 # Environment variables
 .env
@@ -32,7 +34,7 @@ pids
 .env.*.local
 
 # IDE / Editor directories
-.idea
+.idea/
 .vscode/
 *.suo
 *.ntvs*
@@ -43,15 +45,17 @@ pids
 # OS generated files
 .DS_Store
 Thumbs.db
+*~
 
-# Test reports
-/coverage
-/lcov-report
+# Logs
+logs
+*.log
 
-# Optional files
-.npm
-.pnp.*
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+!public.pem
 
-# tmp air
-/tmp
-/tmp.*
+# Vendor directory (if using vendor mode)
+/vendor/
