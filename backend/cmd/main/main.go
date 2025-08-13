@@ -17,8 +17,7 @@ func main() {
 	config.ConnectDB()
 	auth.LoadKeys()
 
-	// ... (migrasi & seeder)
-	database.RunMigrations()
+	// ... (seeder)
 	database.RunSeeders()
 
 	// === Dependency Injection ===

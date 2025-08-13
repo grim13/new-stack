@@ -98,6 +98,20 @@ openssl rsa -in private.pem -pubout -out public.pem
 go mod tidy
 ```
 
+
+**Migrasi Go:**
+
+perintah membuat migrasi
+```bash
+migrate create -ext sql -dir db/migrations create_role_user_roles_table
+```
+perintah menjalankan migrasi
+```bash
+migrate -database "postgres://user:password@host:port/dbname?query&sslmode=disable" -path db/migrations up
+migrate -database "postgres://user:password@host:port/dbname?query&sslmode=disable" -path db/migrations down
+```
+
+
 **Jalankan Server Backend:**
 
 Gunakan Air untuk menjalankan server dengan hot-reloading:
